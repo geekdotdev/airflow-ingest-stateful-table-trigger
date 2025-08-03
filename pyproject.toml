@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling >= 1.26","apache-airflow-core >= 3.0.1","apache-airflow-providers-oracle"]
+build-backend = "hatchling.build"
+
+[project]
+name = "geekdotdev-airflow-ingest-stateful-table-trigger"
+version = "0.0.3"
+authors = [
+  { name="Charlie Federspiel" },
+]
+description = "This trigger can be used in an Asset Watcher to activate new DAGs in Airflow 3.x. It updates each row that it yields, ensuring it is only used once."
+readme = "README.md"
+requires-python = ">=3.9"
+
+license = "MIT"
+license-files = ["LICENCSE"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/geekdotdev"]
+
+
+[project.urls]
+Homepage = "https://github.com/geekdotdev/airflow-ingest-stateful-table-trigger"
+Issues = "https://github.com/geekdotdev/airflow-ingest-stateful-table-trigger/issues"
