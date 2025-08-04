@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling >= 1.26","apache-airflow-core >= 3.0.1","apache-airflow-providers-oracle"]
+requires = ["hatchling >= 1.26","asgiref >= 3.9.1", "apache-airflow-core >= 3.0.1","apache-airflow-providers-oracle"]
 build-backend = "hatchling.build"
 
 [project]
 name = "geekdotdev-airflow-ingest-stateful-table-trigger"
-version = "0.0.3"
+version = "0.1.5"
 authors = [
   { name="Charlie Federspiel" },
 ]

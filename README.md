@@ -8,9 +8,9 @@ python3 -m build
 
 # Install into docker container by staging in your AIRFLOW_HOME
 mkdir $AIRFLOW_HOME/pkgs
-cp dist/geekdotdev_airflow_ingest_stateful_table_trigger-0.0.3-py3-none-any.whl $AIRFLOW_HOME/pkgs
+cp dist/geekdotdev_airflow_ingest_stateful_table_trigger-0.1.5-py3-none-any.whl $AIRFLOW_HOME/pkgs
 podman exec -it airflow /bin/bash
-pip install pkgs/geekdotdev_airflow_ingest_stateful_table_trigger-0.0.3-py3-none-any.whl 
+pip install pkgs/geekdotdev_airflow_ingest_stateful_table_trigger-0.1.5-py3-none-any.whl 
 
 # Or install it directly
-pip install dist/geekdotdev_airflow_ingest_stateful_table_trigger-0.0.2-py3-none-any.whl 
+pip install dist/geekdotdev_airflow_ingest_stateful_table_trigger-0.1.5-py3-none-any.whl 
