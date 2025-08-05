@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "geekdotdev-airflow-ingest-stateful-table-trigger"
-version = "0.1.5"
+version = "0.2.3"
 authors = [
   { name="Charlie Federspiel" },
 ]

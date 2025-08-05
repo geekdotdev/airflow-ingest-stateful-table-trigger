@@ -4,6 +4,8 @@ import asyncio
 import hashlib
 from collections.abc import AsyncIterator
 
+from oracledb.exceptions import InterfaceError
+
 from airflow.triggers.base import BaseEventTrigger, TriggerEvent, TaskFailedEvent
 from airflow.providers.oracle.hooks.oracle import OracleHook
 from asgiref.sync import sync_to_async
@@ -47,31 +49,45 @@ class OracleStatefulTableIngestTrigger(BaseEventTrigger):
         logging.info(f"update statement: {update_stmt}, colName: {self.id_column}, has value: {idValue}");
         cursor.execute(update_stmt, (idValue, ));
         
-
+    async def pollAndWatermark(self, conn):
+        cursor = conn.cursor()
+        nextRowDict = await self.queryNextActionableRecord(cursor, self.ingest_select);
+        
+        
+        if(nextRowDict is not None):
+            idValue = nextRowDict[self.id_column];
+            await self.updateIngestedRecord(cursor, idValue, self.update_statement);
+            if(cursor.rowcount != 1):
+                conn.rollback();
+                return TaskFailedEvent(f"No row with {self.id_column} with value {idValue} was updated using {self.update_statement}.");
+                
+            conn.commit();
+            return TriggerEvent(nextRowDict); 
+        return None;
+       
     async def run(self) -> AsyncIterator[TriggerEvent]:
         # first arg can be the connection id or the name of the kwarg containing the connection id
         hookMethod = sync_to_async(OracleHook); #, driver_path="/home/ec2-user/opt/airflow/lib/mysql-connector-j-8.4.0.jar", driver_class="com.mysql.cj.jdbc.Driver");
         hook = await hookMethod(self.oracle_conn_id);
         connMethod = sync_to_async(hook.get_conn); # Airflow Connectin extra JSON fields should have {"service_name":"YOUR-SERVICE-NAME"}, its not specified here
-        # logging.info(f"read back jdbc jar path: {hook.driver_path}");
-        # logging.info(f"read back jdbc driver class: {hook.driver_class}");
+        conn = await connMethod();
+        
         while True:
-            conn = await connMethod();
-            cursor = conn.cursor()
-            nextRowDict = await self.queryNextActionableRecord(cursor, self.ingest_select);
-            
-            
-            if(nextRowDict is not None):
-                idValue = nextRowDict[self.id_column];
-                await self.updateIngestedRecord(cursor, idValue, self.update_statement);
-                if(cursor.rowcount != 1):
-                    conn.rollback();
-                    yield TaskFailedEvent(f"No row with {self.id_column} with value {idValue} was updated using {self.update_statement}.");
+            try:
+                foundRow = await self.pollAndWatermark(conn);
+                if(foundRow is not None):
+                    yield foundRow;
+                    conn.close(); # Dont move this into finally - we're keeping this connection alive in memory until this loop yields a row.
                     return;
-                conn.commit();
-                yield TriggerEvent(nextRowDict);     
-                conn.close()      
-                return;
+            except InterfaceError as ex:
+                logging.info(f"Attempting to reconnect to Oracle..");
+                conn = await connMethod();
+                foundRow = await self.pollAndWatermark(conn);
+                if(foundRow is not None):
+                    yield foundRow;
+                    conn.close()
+                    return;
+
             await asyncio.sleep(self.interval_seconds)
     def cleanup(): # Parent impl should be OK - DELETE THIS
         return
